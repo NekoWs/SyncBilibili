@@ -75,7 +75,7 @@ connect()
 
 const messages = []
 const handlers = []
-let username, session, group, group_id, watching
+let username, session, group, group_id
 
 chrome.storage.sync.get(["session"], s => {
     session = s.session
@@ -99,21 +99,38 @@ function sendJson(data) {
     return promise
 }
 
+let ports = []
+
 function message(message, sender, mode, ...args) {
     messages.push(new Message(message, sender, mode));
-    chrome.tabs.query({active: true}).then(tabs => {
-        if (tabs.length < 1) return
-        for (const tab of tabs) {
-            if (!tab.url || !tab.url.match(/.*\.bilibili\.com\/video\/.*/g)) continue
-            let data = {action: "message", message: message, sender: sender, mode: mode}
-            data = {...data, ...args[0]}
-            try {
-                chrome.tabs.sendMessage(tab.id, data).then(_ => {})
-            } catch (e) {
-                console.warn(e)
-            }
+    // chrome.tabs.query({active: true}).then(tabs => {
+    //     if (tabs.length < 1) return
+    //     for (const tab of tabs) {
+    //         if (!tab.url || !tab.url.match(/.*\.bilibili\.com\/video\/.*/g)) continue
+    //         let data = {action: "message", message: message, sender: sender, mode: mode}
+    //         data = {...data, ...args[0]}
+    //         try {
+    //             chrome.tabs.sendMessage(tab.id, data).then(_ => {})
+    //         } catch (e) {
+    //             console.warn(e)
+    //         }
+    //     }
+    // })
+    const remove = []
+    for (const port of ports) {
+        let data = {action: "message", message: message, sender: sender, mode: mode}
+        data = {...data, ...args[0]}
+        try {
+            port.postMessage(data)
+        } catch (e) {
+            remove.push(port)
         }
-    })
+    }
+    // 在 Port 失效时移除该 Port，通常抛出
+    // Uncaught Error: Attempting to use a disconnected port object
+    for (const p of remove) {
+        ports.splice(ports.indexOf(p), 1)
+    }
 }
 function clear_messages() {
     messages.splice(0)
@@ -204,5 +221,23 @@ async function listener(request, _) {
                 clear_messages()
             }
             return r
+        case "active":
+            ports = []
+            chrome.tabs.query({active: true}).then(tabs => {
+                if (tabs.length < 1) return
+                for (const tab of tabs) {
+                    console.log(tab)
+                    if (!tab.url || !tab.url.match(/https?:\/\/.*\.bilibili\.com\/.*/g)) continue
+                    let port
+                    try {
+                        port = chrome.tabs.connect(tab.id)
+                    } catch (e) {
+                        console.debug(`Cannot connect tab ${tab}, throw: ${e}`)
+                        continue
+                    }
+                    ports.push(port)
+                }
+            })
+            return {action: "ok"}
     }
 }
