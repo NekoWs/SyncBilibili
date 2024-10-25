@@ -259,6 +259,7 @@
     height: calc(100% - 80px);
     width: 100%;
     padding: 10px;
+    overflow: auto;
 }
 
 .floating-box .input-box {
