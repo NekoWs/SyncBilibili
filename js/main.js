@@ -308,11 +308,11 @@ class FloatingBox {
             })
         }
         this.sendBtn.onclick = () => {
-            let m = this.input.value;
+            let m = this.input.value
             chrome.runtime.sendMessage({action: "send", message: m}).then(r => {
                 console.log(r)
                 if (r.action === "ok") {
-                    this.message(m, r.username, 0)
+                    // this.message(m, r.username, 0)
                     this.input.value = ""
                 }
             })
@@ -358,19 +358,19 @@ class FloatingBox {
         messageBox.appendChild(nickname)
         messageBox.appendChild(msg)
         if (mode === MessageType.SELF_MESSAGE || mode === MessageType.MEMBER_MESSAGE) {
-            nickname.innerText = sender;
-            msg.innerText = message;
+            nickname.innerText = sender
+            msg.innerText = message
             if (mode === MessageType.SELF_MESSAGE) {
-                messageBox.classList.add("self");
+                messageBox.classList.add("self")
             }
         } else {
             messageBox.classList.add("info")
             switch (mode) {
                 case MessageType.MEMBER_LEAVE:
-                    msg.innerText = `${sender} 离开了`;
+                    msg.innerText = `${sender} 离开了`
                     break
                 case MessageType.MEMBER_JOIN:
-                    msg.innerText = `${sender} 加入了`;
+                    msg.innerText = `${sender} 加入了`
                     break
                 case MessageType.VIDEO_PAUSE:
                     msg.innerText = `${sender} 暂停了视频`
@@ -396,7 +396,7 @@ class FloatingBox {
     async sharp_prompt(title, msg, _default, warn) {
         const width = window.innerWidth
         const height = window.innerHeight
-        let x = height - this.mousey - 200
+        let x = height - this.mousey - 100
         if (x < 10) {
             x = 10
         }
