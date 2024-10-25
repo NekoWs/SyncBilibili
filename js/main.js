@@ -443,15 +443,15 @@ async function listener(request) {
     console.log(request)
     switch (action) {
         case "message":
+            floatingBox.message(request.message, request.sender, request.mode)
             if (request.mode === MessageType.MEMBER_MESSAGE) {
                 if (!floatingBox.root.classList.contains("open")) {
                     let mini = request.message
                     if (mini.length > 15) {
                         mini = mini.substring(0, 15) + "..."
                     }
-                    popup("New Message", request.sender + ": " + mini)
+                    popup("新消息", request.sender + ": " + mini)
                 }
-                floatingBox.message(request.message, request.sender, request.mode)
                 return
             }
             if (request.self) return
