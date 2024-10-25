@@ -239,9 +239,9 @@ class FloatingBox {
         this.root.appendChild(this.mainBox)
         this.parent.appendChild(this.root)
         document.body.appendChild(this.parent)
-        addEventListener("load", () => {
+        setInterval(() => {
             document.body.appendChild(this.parent)
-        })
+        }, 1000)
 
         this.groupName.innerText = "Public Group"
         this.groupId.innerText = "10000"
