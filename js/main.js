@@ -44,6 +44,7 @@ class WindowElement {
     buttons = []
     inputs = []
     resolved = false
+    closed = false
     createElementWithClass(tagName, className) {
         const element = document.createElement(tagName);
         element.classList.add(`${this.prefix}-${className}`);
@@ -118,6 +119,7 @@ class WindowElement {
         return values
     }
     close() {
+        this.closed = true
         this.root.classList.add("closing")
         if (!this.resolved) {
             this.reject('closed')
@@ -150,43 +152,46 @@ function popup(title, message, timeout=3000, x=5, right=true) {
         win.close()
     }, timeout)
 }
-
+let last_prompt
 function prompt(title, message, default_value="", regex, x=5, right=true) {
     let resolve, reject, resolved = false
     let promise = new Promise((s, r) => {
         resolve = s
         reject = r
     })
-    const win = new WindowElement()
+    if (last_prompt && !last_prompt.closed) {
+        last_prompt.close()
+    }
+    last_prompt = new WindowElement()
         .setTitle(title)
         .setContent(message)
         .input(default_value)
         .button("Cancel")
         .button("OK", values => {
             if (regex !== undefined && !values[0].match(regex)) {
-                win.inputs[0].classList.add("warning")
+                last_prompt.inputs[0].classList.add("warning")
                 setTimeout(() => {
-                    win.inputs[0].classList.remove("warning")
+                    last_prompt.inputs[0].classList.remove("warning")
                 }, 200)
                 return
             }
             return values[0]
         })
-    win.root.style.bottom = `${x}px`
+    last_prompt.root.style.bottom = `${x}px`
     if (!right) {
-        win.root.style.right = "unset"
-        win.root.style.left = "10px"
-        win.root.style.animationName = "popup-in-left"
-        win.root.classList.add("left")
+        last_prompt.root.style.right = "unset"
+        last_prompt.root.style.left = "10px"
+        last_prompt.root.style.animationName = "popup-in-left"
+        last_prompt.root.classList.add("left")
     }
-    win.inputs[0].onkeydown = e => {
+    last_prompt.inputs[0].onkeydown = e => {
         if (e.key === "Enter") {
-            win.click(1)
+            last_prompt.click(1)
         }
     }
-    win.show().then(value => {
+    last_prompt.show().then(value => {
         resolved = true
-        win.close()
+        last_prompt.close()
         resolve(value)
     }).catch(_ => {
         resolve(undefined)
@@ -234,6 +239,9 @@ class FloatingBox {
         this.root.appendChild(this.mainBox)
         this.parent.appendChild(this.root)
         document.body.appendChild(this.parent)
+        addEventListener("load", () => {
+            document.body.appendChild(this.parent)
+        })
 
         this.groupName.innerText = "Public Group"
         this.groupId.innerText = "10000"
@@ -388,7 +396,11 @@ class FloatingBox {
     async sharp_prompt(title, msg, _default, warn) {
         const width = window.innerWidth
         const height = window.innerHeight
-        let i = await prompt(title, msg, _default, undefined, height - this.mousey - 200, this.mousex > width / 2)
+        let x = height - this.mousey - 200
+        if (x < 10) {
+            x = 10
+        }
+        let i = await prompt(title, msg, _default, undefined, x, this.mousex > width / 2)
         if (!i) return [null, null]
         if (i.split("#").length !== 2) {
             popup("警告", warn)
