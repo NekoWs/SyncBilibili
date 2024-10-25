@@ -239,9 +239,12 @@ class FloatingBox {
         this.root.appendChild(this.mainBox)
         this.parent.appendChild(this.root)
         document.body.appendChild(this.parent)
-        setInterval(() => {
+        let handler = setInterval(() => {
             document.body.appendChild(this.parent)
-        }, 1000)
+        }, 100)
+        setTimeout(() => {
+            clearInterval(handler)
+        }, 2000)
 
         this.groupName.innerText = "Public Group"
         this.groupId.innerText = "10000"
@@ -322,6 +325,10 @@ class FloatingBox {
                 e.preventDefault()
                 this.sendBtn.click()
             }
+            e.stopPropagation()
+        }
+        this.inputBox.onkeyup = e => {
+            e.stopPropagation()
         }
         this.load()
     }
