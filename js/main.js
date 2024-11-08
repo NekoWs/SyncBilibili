@@ -429,6 +429,9 @@ class FloatingBox {
                 //     break
             }
         }
+        if (msg.innerText === "") {
+            return
+        }
         this.messageList.appendChild(messageBox);
         messageBox.scrollIntoView()
     }
