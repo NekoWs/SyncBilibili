@@ -136,9 +136,9 @@ class WindowElement {
         })
     }
 }
-const left_root = document.createElement("div")
-left_root.classList.add("left-root popup-root")
-document.body.appendChild(left_root)
+// const left_root = document.createElement("div")
+// left_root.classList.add("left-root popup-root")
+// document.body.appendChild(left_root)
 // TODO: 优化弹出提示重叠问题
 function popup(title, message, timeout=3000, right=true) {
     const win = new WindowElement()
@@ -153,14 +153,14 @@ function popup(title, message, timeout=3000, right=true) {
         }, timeout)
     }
 }
-function confirm(title, message, timeout=10000, right=true) {
+function confirm(title, message, timeout=10000, right=true, ok="OK", cancel="Cancel") {
     const win = new WindowElement()
         .setTitle(title)
         .setContent(message)
-        .button("OK", () => {
+        .button(ok, () => {
             return true
         })
-        .button("Cancel", () => {
+        .button(cancel, () => {
             return false
         })
     let resolve;
@@ -465,7 +465,11 @@ const floatingBox = new FloatingBox()
 function sendVideo(data, type) {
     chrome.runtime.sendMessage({action: "video", type: type, data: data}).then(_ => {})
 }
-chrome.runtime.sendMessage({action: "active"}).then(_ => {})
+chrome.runtime.sendMessage({action: "active"}).then(r => {
+    if (r.action === "disconnect") {
+        confirmRetry()
+    }
+})
 if (video_type !== VideoType.NOT_VIDEO) {
     sendVideo(video_id, is_video ? MessageType.VIDEO_SWITCH_VIDEO : MessageType.VIDEO_SWITCH_BANGUMI)
 }
@@ -482,6 +486,20 @@ function init_video(v) {
 
     v.addEventListener("seeked", () => {
         sendVideo(v.currentTime, MessageType.VIDEO_SEEKED)
+    })
+}
+
+function confirmRetry() {
+    confirm(
+        "警告",
+        "与服务器断开连接...",
+        -1,
+        true,
+        "重试", "取消"
+    ).then(r => {
+        if (r) {
+            chrome.runtime.sendMessage({action: "retry"}).then(_ => {})
+        }
     })
 }
 
@@ -509,14 +527,14 @@ async function listener(request) {
                     }
                     popup("新消息", request.sender + ": " + mini)
                 }
-                return
+                break
             }
-            if (request.self) return
+            if (request.self) break
             if (request.mode === MessageType.VIDEO_SWITCH_VIDEO || request.mode === MessageType.VIDEO_SWITCH_BANGUMI) {
                 if (request.message === video_id) {
                     // 发送同步视频后其他端已载入视频将会再次发送一个相同的 video id，此时双方进度不同步，进行一次同步
                     sendVideo(video.currentTime, MessageType.VIDEO_SEEKED)
-                    return
+                    break
                 }
                 confirm(
                     "跳转",
@@ -530,9 +548,9 @@ async function listener(request) {
                         location.href = prefix + "bangumi/play/" + request.message
                     }
                 })
-                return
+                break
             }
-            if (video_type === VideoType.NOT_VIDEO) return
+            if (video_type === VideoType.NOT_VIDEO) break
             switch (request.mode) {
                 case MessageType.VIDEO_PAUSE:
                     if (!video.paused) {
@@ -552,7 +570,13 @@ async function listener(request) {
             if (Math.abs(time - video.currentTime) > 2) {
                 video.currentTime = time
             }
-            return
+            break
+        case "disconnect":
+            confirmRetry()
+            break
+        case "connected":
+            popup("提示", "成功连接服务器!")
+            break
     }
     return true
 }
