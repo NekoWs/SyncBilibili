@@ -1,151 +1,67 @@
 html, body {
     margin: 0;
-    width: 400px;
-    height: 350px;
+    width: 350px;
+    height: 150px;
+}
+
+body {
+    background: #000000;
 }
 
 .main-box {
     position: absolute;
     inset: 0;
     /* border: 1px solid #777777; */
-    background: #f2f2f2;
+    /*background: #f2f2f2;*/
 }
 
-.group-info {
-    width: auto;
-    height: 30px;
+.heart {
+    position: absolute;
     display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding-left: 10px;
-    border-bottom: 1px solid #ddd;
-}
-
-#group-id {
-    padding-left: 10px;
-    font-size: 0.8em;
-    color: #555;
-}
-
-#group-name {
-    font-weight: bold;
-}
-
-.message-list {
-    height: calc(100% - 120px);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    scroll-behavior: smooth;
-}
-
-.input-box {
-    height: calc(150px - 82px);
-    border-top: 1px solid #d7d7d7;
-    padding: 10px;
-}
-
-.input-box label {
-    display: none;
-}
-
-textarea {
-    width: 100%;
-    box-sizing: border-box;
-    height: 100%;
-    outline: none;
-    border: none;
-    resize: none;
-    font-size: 14px;
-    font-family: "ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â®ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂºÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¹Ã…â€œ", auto, monospace;
-    background: #f2f2f2;
-}
-
-.button {
-    display: inline-flex;
-    width: 70px;
+    font-size: 2em;
+    animation: fade-out 800ms;
+    color: red;
+    user-select: none;
+    pointer-events: none;
+    width: 25px;
     height: 25px;
     align-items: center;
     justify-content: center;
-    border: 1px solid #0037ff;
-    border-radius: 5px;
-    background: #2e5bff;
-    color: white;
-    font-size: 0.95em;
-    user-select: none;
-    transition: .1s;
 }
 
-.input-box .button {
-    position: absolute;
-    right: 10px;
-    bottom: 10px;
+@keyframes fade-out {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateY(-100px);
+        opacity: 0;
+    }
 }
 
-.button:active {
-    background: #033aff;
-}
-
-.message-box {
-    width: auto;
-    margin: 3px 10px;
-    display: inline-flex;
-    flex-direction: column;
-}
-
-.message-box .nickname {
-    font-size: 12px;
-    color: #5e5e5e;
-    margin-bottom: 2px;
-    user-select: none;
-}
-
-.message-box .message {
-    background: #fff;
-    color: #1e1e1e;
-    padding: 5px 10px;
-    border-radius: 5px;
-    transition: .1s;
-    width: fit-content;
-    max-width: 80%;
-}
-
-.message-box .message:hover {
-    background: #e0e0e0;
-}
-
-.message-box.self {
-    float: right;
-    text-align: right;
-    align-items: flex-end;
-}
-
-.message-box.info .message {
+#h1 {
+    position: fixed;
+    inset: 0;
+    font-size: 1.5em;
+    color: transparent;
+    background: linear-gradient(135deg, #0600f1, #d426ff);
+    background-clip: text;
     margin: auto;
+    display: inline-block;
+    width: fit-content;
+    height: fit-content;
+    user-select: none;
 }
 
-.message-box.self .message {
-    background: #0099ff;
-    color: white;
-}
-
-.message-box.self .message:hover {
-    background: #0086e0;
-}
-
-#message-clone {
-    display: none;
-}
-
-.group-info .button {
-    width: 20px;
-    height: 20px;
-    margin-left: 10px;
+.main-box:after {
+    content: 'NekoW ♥ Emiko';
+    color: #000000;
+    position: absolute;
+    inset: 0;
     display: flex;
     justify-content: center;
-    align-items: center;
-}
-
-.message-list .message-box:last-child {
-    margin-bottom: 15px;
+    font-weight: bold;
+    margin-top: 20px;
 }
