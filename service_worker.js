@@ -20,20 +20,20 @@ class Message {
 }
 
 let ws
-let retry = 0
+let opened = false
 function connect() {
     ws = new WebSocket("wss://gomoku.cc:4001")
 
     ws.addEventListener("close", () => {
+        sendMessage({action: "disconnect"})
         console.log("Disconnected...")
-        setTimeout(() => {
-            connect()
-        }, retry)
-        retry += 5000
+        opened = false
     })
 
     ws.addEventListener("open", () => {
-        retry = 0
+        opened = true
+        console.log("Connected!")
+        sendMessage({action: "connected"})
     })
 
     ws.addEventListener("message", e => {
@@ -48,9 +48,9 @@ function connect() {
         switch (action) {
             case "message":
                 message(data.message, data.sender, data.mode)
-                try {
-                    chrome.runtime.sendMessage(data).then(_ => {})
-                } catch (_) {}
+                // try {
+                //     chrome.runtime.sendMessage(data).then(_ => {})
+                // } catch (_) {}
                 return
         }
         if (data.handler !== undefined) {
@@ -100,6 +100,24 @@ function sendJson(data) {
 }
 
 let ports = []
+/*
+    与所有 Port 进行通信
+ */
+function sendMessage(data) {
+    const remove = []
+    for (const port of ports) {
+        try {
+            port.postMessage(data)
+        } catch (e) {
+            remove.push(port)
+        }
+    }
+    // 在 Port 失效时移除该 Port，通常抛出
+    // Uncaught Error: Attempting to use a disconnected port object
+    for (const p of remove) {
+        ports.splice(ports.indexOf(p), 1)
+    }
+}
 
 function message(message, sender, mode, ...args) {
     messages.push(new Message(message, sender, mode));
@@ -116,21 +134,9 @@ function message(message, sender, mode, ...args) {
     //         }
     //     }
     // })
-    const remove = []
-    for (const port of ports) {
-        let data = {action: "message", message: message, sender: sender, mode: mode}
-        data = {...data, ...args[0]}
-        try {
-            port.postMessage(data)
-        } catch (e) {
-            remove.push(port)
-        }
-    }
-    // 在 Port 失效时移除该 Port，通常抛出
-    // Uncaught Error: Attempting to use a disconnected port object
-    for (const p of remove) {
-        ports.splice(ports.indexOf(p), 1)
-    }
+    let data = {action: "message", message: message, sender: sender, mode: mode}
+    data = {...data, ...args[0]}
+    sendMessage(data)
 }
 function clear_messages() {
     messages.splice(0)
@@ -139,6 +145,7 @@ function clear_messages() {
 function startHeart() {
     clearInterval(keepalive)
     keepalive = setInterval(() => {
+        if (!opened) return
         sendJson({mode: "heart", session: session}).then(r => {
             if (r.action !== "ok") {
                 if (r.action === "invalid-session") {
@@ -221,6 +228,9 @@ async function listener(request, _) {
                 clear_messages()
             }
             return r
+        case "retry":
+            connect()
+            return
         case "active":
             ports = []
             chrome.tabs.query({active: true}).then(tabs => {
@@ -238,6 +248,9 @@ async function listener(request, _) {
                     ports.push(port)
                 }
             })
+            if (!opened) {
+                return {action: "disconnect"}
+            }
             return {action: "ok"}
     }
 }
