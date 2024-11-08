@@ -15,21 +15,30 @@ function makeHeart(x, y) {
         heart.remove()
     }, 750)
 }
-let x, y, handler
+let x, y, handlers = []
+function clearHandlers() {
+    for (let handler of handlers) {
+        clearInterval(handler)
+    }
+    handlers = []
+}
 document.body.addEventListener("mousedown", e => {
     down = true
     makeHeart(e.x, e.y)
     setTimeout(() => {
         if (down) {
-            handler = setInterval(() => {
+            handlers.push(setInterval(() => {
+                if (!down) {
+                    clearHandlers()
+                }
                 makeHeart(x, y)
-            }, 80)
+            }, 150))
         }
     }, 1000)
 })
 document.body.addEventListener("mouseup", e => {
     down = false
-    clearInterval(handler)
+    clearHandlers()
 })
 document.body.addEventListener("mousemove", e => {
     x = e.x
