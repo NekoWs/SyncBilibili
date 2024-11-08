@@ -142,15 +142,46 @@ function popup(title, message, timeout=3000, x=5, right=true) {
         .setTitle(title)
         .setContent(message)
         .button("OK")
+    offset_window(win, x, right)
+    win.show().then(_ => {}).catch(_ => {})
+    if (timeout > 0) {
+        setTimeout(() => {
+            win.close()
+        }, timeout)
+    }
+}
+function confirm(title, message, timeout=10000, x=5, right=true) {
+    const win = new WindowElement()
+        .setTitle(title)
+        .setContent(message)
+        .button("OK", () => {
+            return true
+        })
+        .button("Cancel", () => {
+            return false
+        })
+    let resolve;
+    const promise = new Promise((r, _) => {
+        resolve = r
+    })
+    offset_window(win, x, right)
+    win.show().then(r => {
+        resolve(r)
+        win.close()
+    }).catch(_ => {})
+    if (timeout > 0) {
+        setTimeout(() => {
+            win.close()
+        }, timeout)
+    }
+    return promise
+}
+function offset_window(win, x, right=true) {
     win.root.style.bottom = `${x}px`
     if (!right) {
         win.root.style.right = "unset"
         win.root.style.left = "10px"
     }
-    win.show().then(_ => {}).catch(_ => {})
-    setTimeout(() => {
-        win.close()
-    }, timeout)
 }
 let last_prompt
 function prompt(title, message, default_value="", regex, x=5, right=true) {
@@ -255,6 +286,7 @@ class FloatingBox {
             if (e.target === this.root || this.root.contains(e.target) || e.target.classList.contains("syncbilibili")) {
                 return
             }
+            this.load()
             this.root.classList.toggle("open", false)
         }
 
@@ -352,6 +384,7 @@ class FloatingBox {
             if (s.action === "sync-data") {
                 this.groupName.innerHTML = s.group;
                 this.groupId.innerHTML = s.group_id;
+                this.messageList.innerHTML = "";
                 for (const msg of s.messages) {
                     this.message(msg.message, msg.sender, msg.mode);
                 }
@@ -379,21 +412,21 @@ class FloatingBox {
                 case MessageType.MEMBER_JOIN:
                     msg.innerText = `${sender} 加入了`
                     break
-                case MessageType.VIDEO_PAUSE:
-                    msg.innerText = `${sender} 暂停了视频`
-                    break
-                case MessageType.VIDEO_PLAY:
-                    msg.innerText = `${sender} 播放了视频`
-                    break
-                case MessageType.VIDEO_SEEKED:
-                    msg.innerText = `${sender} 将视频跳转到了 ${Math.round(message)}s`
-                    break
-                case MessageType.VIDEO_SWITCH_VIDEO:
-                    msg.innerText = `${sender} 更换了视频为 ${message}`
-                    break
-                case MessageType.VIDEO_SWITCH_BANGUMI:
-                    msg.innerText = `${sender} 更换了番剧为 ${message}`
-                    break
+                // case MessageType.VIDEO_PAUSE:
+                //     msg.innerText = `${sender} 暂停了视频`
+                //     break
+                // case MessageType.VIDEO_PLAY:
+                //     msg.innerText = `${sender} 播放了视频`
+                //     break
+                // case MessageType.VIDEO_SEEKED:
+                //     msg.innerText = `${sender} 将视频跳转到了 ${Math.round(message)}s`
+                //     break
+                // case MessageType.VIDEO_SWITCH_VIDEO:
+                //     msg.innerText = `${sender} 更换了视频为 ${message}`
+                //     break
+                // case MessageType.VIDEO_SWITCH_BANGUMI:
+                //     msg.innerText = `${sender} 更换了番剧为 ${message}`
+                //     break
             }
         }
         this.messageList.appendChild(messageBox);
@@ -480,21 +513,33 @@ async function listener(request) {
                     sendVideo(video.currentTime, MessageType.VIDEO_SEEKED)
                     return
                 }
-                let prefix = "https://www.bilibili.com/"
-                if (request.mode === MessageType.VIDEO_SWITCH_VIDEO) {
-                    location.href = prefix + "video/" + request.message
-                } else {
-                    location.href = prefix + "bangumi/play/" + request.message
-                }
+                confirm(
+                    "跳转",
+                    `${request.sender} 想同步到视频 ${request.message}，是否跳转？`
+                ).then(r => {
+                    if (!r) return
+                    let prefix = "https://www.bilibili.com/"
+                    if (request.mode === MessageType.VIDEO_SWITCH_VIDEO) {
+                        location.href = prefix + "video/" + request.message
+                    } else {
+                        location.href = prefix + "bangumi/play/" + request.message
+                    }
+                })
                 return
             }
             if (video_type === VideoType.NOT_VIDEO) return
             switch (request.mode) {
                 case MessageType.VIDEO_PAUSE:
-                    video.pause()
+                    if (!video.paused) {
+                        video.pause()
+                        popup("提示", `${request.sender} 暂停了视频`, 1000)
+                    }
                     break
                 case MessageType.VIDEO_PLAY:
-                    video.play()
+                    if (video.paused) {
+                        video.play()
+                        popup("提示", `${request.sender} 播放了视频`, 1000)
+                    }
                     break
             }
             let time = request.message * 1.0
