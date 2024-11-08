@@ -128,21 +128,24 @@ class WindowElement {
             this.root.remove()
         }, 200)
     }
-    show() {
-        document.body.appendChild(this.root)
+    show(root=document.body) {
+        root.appendChild(this.root)
         return new Promise((resolve, reject) => {
             this.resolve = resolve
             this.reject = reject
         })
     }
 }
-
-function popup(title, message, timeout=3000, x=5, right=true) {
+const left_root = document.createElement("div")
+left_root.classList.add("left-root popup-root")
+document.body.appendChild(left_root)
+// TODO: 优化弹出提示重叠问题
+function popup(title, message, timeout=3000, right=true) {
     const win = new WindowElement()
         .setTitle(title)
         .setContent(message)
         .button("OK")
-    offset_window(win, x, right)
+    offset_window(win, right)
     win.show().then(_ => {}).catch(_ => {})
     if (timeout > 0) {
         setTimeout(() => {
@@ -150,7 +153,7 @@ function popup(title, message, timeout=3000, x=5, right=true) {
         }, timeout)
     }
 }
-function confirm(title, message, timeout=10000, x=5, right=true) {
+function confirm(title, message, timeout=10000, right=true) {
     const win = new WindowElement()
         .setTitle(title)
         .setContent(message)
@@ -164,7 +167,7 @@ function confirm(title, message, timeout=10000, x=5, right=true) {
     const promise = new Promise((r, _) => {
         resolve = r
     })
-    offset_window(win, x, right)
+    offset_window(win, right)
     win.show().then(r => {
         resolve(r)
         win.close()
@@ -176,8 +179,7 @@ function confirm(title, message, timeout=10000, x=5, right=true) {
     }
     return promise
 }
-function offset_window(win, x, right=true) {
-    win.root.style.bottom = `${x}px`
+function offset_window(win, right=true) {
     if (!right) {
         win.root.style.right = "unset"
         win.root.style.left = "10px"
@@ -280,13 +282,13 @@ class FloatingBox {
         this.groupName.innerText = "Public Group"
         this.groupId.innerText = "10000"
         this.floating.onclick = () => {
+            this.load()
             this.root.classList.add("open")
         }
         document.body.onclick = e => {
             if (e.target === this.root || this.root.contains(e.target) || e.target.classList.contains("syncbilibili")) {
                 return
             }
-            this.load()
             this.root.classList.toggle("open", false)
         }
 
