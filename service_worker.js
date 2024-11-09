@@ -7,7 +7,9 @@ const MessageType = {
     VIDEO_PLAY: 5,
     VIDEO_SEEKED: 6,
     VIDEO_SWITCH_VIDEO: 7,
-    VIDEO_SWITCH_BANGUMI: 8
+    VIDEO_SWITCH_BANGUMI: 8,
+    VIDEO_SWITCH_ACCEPT: 9,
+    VIDEO_SWITCH_DENY: 10
 }
 class Message {
     message; sender; timestamp; mode;
@@ -86,6 +88,7 @@ chrome.storage.sync.get(["username"], u => {
 let keepalive = undefined
 
 function sendJson(data) {
+    if (!opened) return
     let promise
     if (!data.handler) {
         data.handler = handlers.length
