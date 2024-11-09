@@ -18,14 +18,18 @@ const VideoType = {
 }
 let video_r = /https?:\/\/.*\.bilibili\.com\/video\/([^?/]+).*/g
 let bangumi_r = /https?:\/\/.*\.bilibili\.com\/bangumi\/play\/([^?/]+).*/g
-let is_video = location.href.match(video_r)
-let video_id = location.href.replace(video_r, "$1")
-let is_bangumi = location.href.match(bangumi_r)
-if (is_bangumi) {
-    video_id = location.href.replace(bangumi_r, "$1")
+let is_video, video_id, is_bangumi, video_type
+function getInfo(href) {
+    is_video = href.match(video_r)
+    video_id = href.replace(video_r, "$1")
+    is_bangumi = href.match(bangumi_r)
+    if (is_bangumi) {
+        video_id = href.replace(bangumi_r, "$1")
+    }
+    video_type = (is_video || is_bangumi) ? (is_video ? VideoType.VIDEO : VideoType.BANGUMI) : VideoType.NOT_VIDEO
+    console.debug(is_video, video_id, is_bangumi, video_type)
 }
-let video_type = (is_video || is_bangumi) ? (is_video ? VideoType.VIDEO : VideoType.BANGUMI) : VideoType.NOT_VIDEO
-
+getInfo(location.href)
 let video = undefined
 function get_video(delay=0) {
     if (video_type === VideoType.NOT_VIDEO) {
@@ -41,6 +45,34 @@ function get_video(delay=0) {
     }, delay)
 }
 get_video()
+
+function check_href(target, n=0) {
+    if (n > 2) return null
+    if (!target || !target.tagName) return null
+    if (target.tagName.toLowerCase() === "a") {
+        return target.href
+    }
+    return check_href(target.parentElement, n + 1)
+}
+document.addEventListener("click", e => {
+    let target = e.target
+    let href = check_href(target)
+    if (href !== null) {
+        getInfo(href)
+        try {
+            syncVideo()
+        } catch (e) {
+            // 有时会抛出无法发送 runtime 消息的问题，不知道原因
+            console.warn(e)
+        }
+    }
+})
+function syncVideo() {
+    if (video_type !== VideoType.NOT_VIDEO) {
+        sendVideo(video_id, is_video ? MessageType.VIDEO_SWITCH_VIDEO : MessageType.VIDEO_SWITCH_BANGUMI)
+    }
+}
+syncVideo()
 
 class WindowElement {
     buttons = []
@@ -473,9 +505,6 @@ chrome.runtime.sendMessage({action: "active"}).then(r => {
         confirmRetry()
     }
 })
-if (video_type !== VideoType.NOT_VIDEO) {
-    sendVideo(video_id, is_video ? MessageType.VIDEO_SWITCH_VIDEO : MessageType.VIDEO_SWITCH_BANGUMI)
-}
 
 function init_video(v) {
     if (!v) {
