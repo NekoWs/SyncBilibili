@@ -177,6 +177,7 @@ async function listener(request, _) {
         case "load":
             if (session !== undefined) {
                 let r = await sendSession({mode: "reconnect"})
+                if (!r) return {action: "need-login"}
                 if (r.action !== "ok") {
                     console.log(r.action)
                     if (r.action === "invalid-session") {
@@ -207,8 +208,9 @@ async function listener(request, _) {
             return {action: r.action}
         case "send":
             r = await sendSession({mode: "send", message: request.message})
+            if (!r) return {action: "need-login"}
             if (r.action !== "ok") {
-                console.error(r.action)
+                console.debug(r.action)
                 return r
             }
             message(request.message, username, MessageType.SELF_MESSAGE)
@@ -216,13 +218,15 @@ async function listener(request, _) {
         case "video":
             if (group_id === 10000) return
             r = await sendSession({mode: "video", data: request.data, type: request.type})
+            if (!r) return {action: "need-login"}
             if (r.action !== "ok") {
-                console.error(r.action)
+                console.debug(r.action)
             }
             message(request.data, username, request.type, {self: true})
             return r
         case "create":
             r = await sendSession({mode: "create", group_name: request.name, password: request.password})
+            if (!r) return {action: "need-login"}
             if (r.action === "ok") {
                 group = request.name
                 group_id = r.group_id
@@ -231,6 +235,7 @@ async function listener(request, _) {
             return r
         case "join":
             r = await sendSession({mode: "join", group_id: request.group_id, password: request.password})
+            if (!r) return {action: "need-login"}
             if (r.action === "ok") {
                 group = r.group_name
                 group_id = request.group_id
