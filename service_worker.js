@@ -173,6 +173,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function listener(request, _) {
     let action = request.action
     let r
+    console.debug("runtime message", request)
     switch (action) {
         case "load":
             if (session !== undefined) {
@@ -250,7 +251,7 @@ async function listener(request, _) {
             chrome.tabs.query({active: true}).then(tabs => {
                 if (tabs.length < 1) return
                 for (const tab of tabs) {
-                    console.log(tab)
+                    console.log("tab connected", tab)
                     if (!tab.url || !tab.url.match(/https?:\/\/.*\.bilibili\.com\/.*/g)) continue
                     let port
                     try {
