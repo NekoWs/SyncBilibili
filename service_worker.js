@@ -102,6 +102,12 @@ function sendJson(data) {
     return promise
 }
 
+function sendSession(data) {
+    if (!session) return // 若未登录则不发送消息到服务端减少消息量
+    data = {session: session, ...data}
+    return sendJson(data)
+}
+
 let ports = []
 /*
     与所有 Port 进行通信
@@ -149,7 +155,7 @@ function startHeart() {
     clearInterval(keepalive)
     keepalive = setInterval(() => {
         if (!opened) return
-        sendJson({mode: "heart", session: session}).then(r => {
+        sendSession({mode: "heart"}).then(r => {
             if (r.action !== "ok") {
                 if (r.action === "invalid-session") {
                     chrome.runtime.sendMessage(r).then(_ => {})
@@ -170,7 +176,7 @@ async function listener(request, _) {
     switch (action) {
         case "load":
             if (session !== undefined) {
-                let r = await sendJson({mode: "reconnect", session: session})
+                let r = await sendSession({mode: "reconnect"})
                 if (r.action !== "ok") {
                     console.log(r.action)
                     if (r.action === "invalid-session") {
@@ -200,7 +206,7 @@ async function listener(request, _) {
             }
             return {action: r.action}
         case "send":
-            r = await sendJson({mode: "send", message: request.message, session: session})
+            r = await sendSession({mode: "send", message: request.message})
             if (r.action !== "ok") {
                 console.error(r.action)
                 return r
@@ -209,14 +215,14 @@ async function listener(request, _) {
             return {action: "ok", username: username}
         case "video":
             if (group_id === 10000) return
-            r = await sendJson({mode: "video", data: request.data, type: request.type, session: session})
+            r = await sendSession({mode: "video", data: request.data, type: request.type})
             if (r.action !== "ok") {
                 console.error(r.action)
             }
             message(request.data, username, request.type, {self: true})
             return r
         case "create":
-            r = await sendJson({mode: "create", session: session, group_name: request.name, password: request.password})
+            r = await sendSession({mode: "create", group_name: request.name, password: request.password})
             if (r.action === "ok") {
                 group = request.name
                 group_id = r.group_id
@@ -224,7 +230,7 @@ async function listener(request, _) {
             }
             return r
         case "join":
-            r = await sendJson({mode: "join", session: session, group_id: request.group_id, password: request.password})
+            r = await sendSession({mode: "join", group_id: request.group_id, password: request.password})
             if (r.action === "ok") {
                 group = r.group_name
                 group_id = request.group_id
