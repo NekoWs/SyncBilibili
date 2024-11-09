@@ -7,7 +7,9 @@ const MessageType = {
     VIDEO_PLAY: 5,
     VIDEO_SEEKED: 6,
     VIDEO_SWITCH_VIDEO: 7,
-    VIDEO_SWITCH_BANGUMI: 8
+    VIDEO_SWITCH_BANGUMI: 8,
+    VIDEO_SWITCH_ACCEPT: 9,
+    VIDEO_SWITCH_DENY: 10
 }
 const VideoType = {
     NOT_VIDEO: 0,
@@ -153,7 +155,7 @@ function popup(title, message, timeout=3000, right=true) {
         }, timeout)
     }
 }
-function confirm(title, message, timeout=10000, right=true, ok="OK", cancel="Cancel") {
+function confirm(title, message, timeout=10000, right=true, ok="OK", cancel="Cancel", windowFunc=(_) => {}) {
     const win = new WindowElement()
         .setTitle(title)
         .setContent(message)
@@ -168,6 +170,7 @@ function confirm(title, message, timeout=10000, right=true, ok="OK", cancel="Can
         resolve = r
     })
     offset_window(win, right)
+    windowFunc.call(win)
     win.show().then(r => {
         resolve(r)
         win.close()
@@ -475,7 +478,11 @@ if (video_type !== VideoType.NOT_VIDEO) {
 }
 
 function init_video(v) {
-    if (!v) return
+    if (!v) {
+        console.debug("Failed to get video element.")
+        return
+    }
+    console.debug("Success to get video element.")
     v.addEventListener("pause", () => {
         sendVideo(v.currentTime, MessageType.VIDEO_PAUSE)
     })
@@ -488,18 +495,24 @@ function init_video(v) {
         sendVideo(v.currentTime, MessageType.VIDEO_SEEKED)
     })
 }
-
+let retry_win = []
 function confirmRetry() {
+    let win
     confirm(
         "警告",
         "与服务器断开连接...",
         -1,
         true,
-        "重试", "取消"
+        "重试", "取消",
+        (w) => {
+            w = win
+            retry_win.push(w)
+        }
     ).then(r => {
         if (r) {
             chrome.runtime.sendMessage({action: "retry"}).then(_ => {})
         }
+        retry_win.splice(retry_win.indexOf(win), 1)
     })
 }
 
@@ -540,7 +553,11 @@ async function listener(request) {
                     "跳转",
                     `${request.sender} 想同步到视频 ${request.message}，是否跳转？`
                 ).then(r => {
-                    if (!r) return
+                    if (!r) {
+                        sendVideo('', MessageType.VIDEO_SWITCH_DENY)
+                        return
+                    }
+                    sendVideo('', MessageType.VIDEO_SWITCH_ACCEPT)
                     let prefix = "https://www.bilibili.com/"
                     if (request.mode === MessageType.VIDEO_SWITCH_VIDEO) {
                         location.href = prefix + "video/" + request.message
@@ -564,6 +581,12 @@ async function listener(request) {
                         popup("提示", `${request.sender} 播放了视频`, 1000)
                     }
                     break
+                case MessageType.VIDEO_SWITCH_ACCEPT:
+                    popup("提示", `${request.sender} 同意了切换视频`)
+                    return // 同意/取消 不发送视频进度
+                case MessageType.VIDEO_SWITCH_DENY:
+                    popup("提示", `${request.sender} 取消了切换视频`)
+                    return // 同意/取消 不发送视频进度
             }
             let time = request.message * 1.0
             // 与其他端进度容错：2s
@@ -575,6 +598,10 @@ async function listener(request) {
             confirmRetry()
             break
         case "connected":
+            for (let win of retry_win) {
+                win.click(1)
+            }
+            retry_win = []
             popup("提示", "成功连接服务器!")
             break
     }
