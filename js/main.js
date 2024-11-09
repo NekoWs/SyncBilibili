@@ -142,7 +142,7 @@ class WindowElement {
 // left_root.classList.add("left-root popup-root")
 // document.body.appendChild(left_root)
 // TODO: 优化弹出提示重叠问题
-function popup(title, message, timeout=3000, right=true) {
+function popup(title, message, timeout=2000, right=true) {
     const win = new WindowElement()
         .setTitle(title)
         .setContent(message)
@@ -572,13 +572,13 @@ async function listener(request) {
                 case MessageType.VIDEO_PAUSE:
                     if (!video.paused) {
                         video.pause()
-                        popup("提示", `${request.sender} 暂停了视频`, 1000)
+                        popup("提示", `${request.sender} 暂停了视频`)
                     }
                     break
                 case MessageType.VIDEO_PLAY:
                     if (video.paused) {
                         video.play()
-                        popup("提示", `${request.sender} 播放了视频`, 1000)
+                        popup("提示", `${request.sender} 播放了视频`)
                     }
                     break
                 case MessageType.VIDEO_SWITCH_ACCEPT:
