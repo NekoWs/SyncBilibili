@@ -399,7 +399,6 @@ class FloatingBox {
         this.inputBox.onkeyup = e => {
             e.stopPropagation()
         }
-        this.load()
     }
     load() {
         chrome.runtime.sendMessage({action: "load"}).then(async s => {
@@ -503,6 +502,10 @@ function sendVideo(data, type) {
 chrome.runtime.sendMessage({action: "active"}).then(r => {
     if (r.action === "disconnect") {
         confirmRetry()
+        return
+    }
+    if (r.action === "ok") {
+        floatingBox.load()
     }
 })
 
@@ -541,7 +544,6 @@ function confirmRetry() {
         if (r) {
             chrome.runtime.sendMessage({action: "retry"}).then(_ => {})
         }
-        retry_win.splice(retry_win.indexOf(win), 1)
     })
 }
 
