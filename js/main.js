@@ -555,6 +555,7 @@ chrome.runtime.onConnect.addListener(port => {
         })
     })
 })
+let last_action = 0
 async function listener(request) {
     let action = request.action
     console.log(request)
@@ -597,6 +598,11 @@ async function listener(request) {
                 break
             }
             if (video_type === VideoType.NOT_VIDEO) break
+            let now = Date.now()
+            if (now - last_action < 800) {
+                break
+            }
+            last_action = now
             switch (request.mode) {
                 case MessageType.VIDEO_PAUSE:
                     if (!video.paused) {
