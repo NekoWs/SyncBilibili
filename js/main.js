@@ -1,3 +1,5 @@
+
+
 const MessageType = {
     SELF_MESSAGE: 0,
     MEMBER_MESSAGE: 1,
@@ -418,11 +420,12 @@ class FloatingBox {
                 return
             }
             if (s.action === "sync-data") {
-                this.groupName.innerHTML = s.group;
-                this.groupId.innerHTML = s.group_id;
-                this.messageList.innerHTML = "";
+                ping = s.ping
+                this.groupName.innerHTML = s.group
+                this.groupId.innerHTML = s.group_id
+                this.messageList.innerHTML = ""
                 for (const msg of s.messages) {
-                    this.message(msg.message, msg.sender, msg.mode);
+                    this.message(msg.message, msg.sender, msg.mode)
                 }
             }
         })
@@ -557,7 +560,7 @@ chrome.runtime.onConnect.addListener(port => {
         })
     })
 })
-let last_action = 0
+let last_action = 0, ping = 0
 async function listener(request) {
     let action = request.action
     console.log(request)
@@ -626,8 +629,8 @@ async function listener(request) {
                     return // 同意/取消 不发送视频进度
             }
             let time = request.message * 1.0
-            // 与其他端进度容错：2s
-            if (Math.abs(time - video.currentTime) > 2) {
+            // 与其他端进度容错：±(ping + 500ms)
+            if (Math.abs(time - video.currentTime) > ping / 1000 + 0.5) {
                 video.currentTime = time
             }
             break
@@ -636,6 +639,7 @@ async function listener(request) {
             break
         case "connected":
             for (let win of retry_win) {
+                if (!win) continue
                 win.click(1)
             }
             retry_win = []
