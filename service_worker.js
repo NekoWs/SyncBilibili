@@ -77,7 +77,7 @@ connect()
 
 const messages = []
 const handlers = []
-let username, session, group, group_id
+let username, session, group, group_id, ping, ping_start
 
 chrome.storage.sync.get(["session"], s => {
     session = s.session
@@ -155,11 +155,15 @@ function startHeart() {
     clearInterval(keepalive)
     keepalive = setInterval(() => {
         if (!opened) return
+        ping_start = Date.now()
         sendSession({mode: "heart"}).then(r => {
-            if (r.action !== "ok") {
-                if (r.action === "invalid-session") {
-                    chrome.runtime.sendMessage(r).then(_ => {})
-                }
+            if (r.action === "ok") {
+                ping = Date.now() - ping_start
+                return;
+            }
+            if (r.action === "invalid-session") {
+                chrome.runtime.sendMessage(r).then(_ => {
+                })
             }
         })
     }, 20000)
@@ -194,7 +198,7 @@ async function listener(request, _) {
                 return {action: "need-login"}
             }
             startHeart()
-            return {action: "sync-data", messages: messages, group: group, group_id: group_id, username: username}
+            return {action: "sync-data", messages: messages, group: group, group_id: group_id, username: username, ping: ping}
         case "login":
             username = request.name;
             r = await sendJson({mode: "login", name: username})
@@ -267,5 +271,13 @@ async function listener(request, _) {
                 return {action: "disconnect"}
             }
             return {action: "ok"}
+        case "update":
+            r = await sendJson({mode: "update"})
+            if (r.action === "ok") {
+                await chrome.storage.local.set({script: r.script})
+                console.debug("Scripts saved.")
+                return {action: "ok", script: r.script}
+            }
+            return {action: r.action}
     }
 }
